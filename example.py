@@ -1,128 +1,192 @@
+#!/usr/bin/env python3
 """
 Примеры использования Google AI Overview Parser
 """
 
-from parser import parse_ai_overview, GoogleAIOverviewParser
+from google_ai_overview_parser import parse_ai_overview, GoogleAIOverviewParser
 
 
-def example_1_basic():
-    """Пример 1: Базовое использование"""
+def example_1_simple():
+    """Простой пример использования"""
     print("=" * 80)
-    print("Example 1: Basic Usage")
+    print("Пример 1: Простое использование")
     print("=" * 80)
 
-    query = "What is artificial intelligence?"
-    print(f"\nQuery: {query}\n")
+    query = "What is machine learning"
+    result = parse_ai_overview(query)
 
-    result = parse_ai_overview(query, headless=True)
-
-    if result.found:
-        print("✅ AI Overview found!")
-        print(f"\nText length: {len(result.text)} characters")
-        print("\nAI Overview Text:")
-        print("-" * 80)
-        print(result.text)
-        print("-" * 80)
-
-        if result.sources:
-            print(f"\nSources ({len(result.sources)}):")
-            for i, source in enumerate(result.sources, 1):
-                print(f"  {i}. {source}")
-
-        print(f"\nTimestamp: {result.timestamp}")
+    if result:
+        print(f"\n✅ AI Overview найден для запроса '{query}':\n")
+        print(result)
     else:
-        print("❌ AI Overview not found for this query")
-        print("Note: AI Overview may not be available for all queries or regions")
+        print(f"\n❌ AI Overview не найден для запроса '{query}'")
+
+    print("\n")
 
 
-def example_2_multiple_queries():
-    """Пример 2: Несколько запросов"""
-    print("\n\n" + "=" * 80)
-    print("Example 2: Multiple Queries")
+def example_2_with_options():
+    """Пример с дополнительными опциями"""
+    print("=" * 80)
+    print("Пример 2: С дополнительными опциями")
+    print("=" * 80)
+
+    query = "How does blockchain work"
+
+    # С сохранением HTML для анализа
+    result = parse_ai_overview(
+        query=query,
+        method='playwright',  # Используем Playwright
+        headless=True,        # Headless режим
+        save_html=True,       # Сохранить HTML
+        language='en'         # Английский язык
+    )
+
+    if result:
+        print(f"\n✅ AI Overview найден (длина: {len(result)} символов):\n")
+        print(result[:300] + "..." if len(result) > 300 else result)
+    else:
+        print(f"\n❌ AI Overview не найден")
+
+    print("\n")
+
+
+def example_3_multiple_queries():
+    """Пример с множественными запросами"""
+    print("=" * 80)
+    print("Пример 3: Обработка нескольких запросов")
     print("=" * 80)
 
     queries = [
-        "How does machine learning work?",
-        "What is quantum computing?",
-        "Explain blockchain technology"
+        "What is artificial intelligence",
+        "How does photosynthesis work",
+        "Explain quantum computing",
+        "What causes climate change"
     ]
 
-    parser = GoogleAIOverviewParser(headless=True, timeout=30000)
+    # Создаем парсер один раз
+    parser = GoogleAIOverviewParser(
+        method='playwright',
+        headless=True,
+        save_html=False
+    )
 
-    for i, query in enumerate(queries, 1):
-        print(f"\n{i}. Query: {query}")
-        print("-" * 80)
+    results = {}
 
-        result = parser.parse(query)
+    for query in queries:
+        print(f"\nОбрабатываю: {query}")
+        result = parser.parse(query, language='en')
 
-        if result.found:
-            print(f"✅ Found ({len(result.text)} chars)")
-            print(f"Preview: {result.text[:200]}...")
+        results[query] = result
+
+        if result:
+            print(f"  ✅ Найдено ({len(result)} символов)")
         else:
-            print("❌ Not found")
+            print(f"  ❌ Не найдено")
 
-
-def example_3_custom_settings():
-    """Пример 3: С настройками"""
-    print("\n\n" + "=" * 80)
-    print("Example 3: Custom Settings")
+    # Выводим результаты
+    print("\n" + "=" * 80)
+    print("Результаты:")
     print("=" * 80)
 
-    query = "What is Python programming language?"
-    print(f"\nQuery: {query}\n")
+    for query, result in results.items():
+        print(f"\n📝 {query}")
+        if result:
+            print(f"   {result[:150]}...")
+        else:
+            print(f"   Не найдено")
 
-    # Используем не-headless режим для отладки
+    print("\n")
+
+
+def example_4_requests_method():
+    """Пример использования метода requests (быстрее, но менее надежно)"""
+    print("=" * 80)
+    print("Пример 4: Использование метода requests")
+    print("=" * 80)
+
+    query = "What is Python programming"
+
+    # Используем requests вместо Playwright (быстрее, но может не найти JS-контент)
     result = parse_ai_overview(
         query=query,
-        headless=True,  # Установите False чтобы увидеть браузер
-        timeout=30000,
+        method='requests',  # Используем requests + BeautifulSoup
+        save_html=False,
         language='en'
     )
 
-    if result.found:
-        print("✅ AI Overview found!")
-        print(f"\n{result.text[:300]}...")
+    if result:
+        print(f"\n✅ AI Overview найден:\n")
+        print(result)
     else:
-        print("❌ AI Overview not found")
+        print(f"\n❌ AI Overview не найден")
+        print("\nПримечание: Метод 'requests' может не находить AI Overview,")
+        print("если он рендерится через JavaScript. Попробуйте метод 'playwright'.")
+
+    print("\n")
 
 
-def example_4_result_dict():
-    """Пример 4: Работа с результатом как словарем"""
-    print("\n\n" + "=" * 80)
-    print("Example 4: Result as Dictionary")
+def example_5_error_handling():
+    """Пример с обработкой ошибок"""
+    print("=" * 80)
+    print("Пример 5: Обработка ошибок")
     print("=" * 80)
 
-    query = "What is climate change?"
-    print(f"\nQuery: {query}\n")
+    query = "test query"
 
-    result = parse_ai_overview(query)
+    try:
+        result = parse_ai_overview(
+            query=query,
+            method='playwright',
+            headless=True,
+            save_html=False,
+            language='en'
+        )
 
-    # Преобразуем в словарь
-    result_dict = result.to_dict()
-
-    print("Result as dictionary:")
-    for key, value in result_dict.items():
-        if key == 'text' and value:
-            print(f"  {key}: {value[:100]}... ({len(value)} chars)")
-        elif key == 'sources' and value:
-            print(f"  {key}: {len(value)} sources")
+        if result:
+            print(f"\n✅ Результат получен")
+            print(f"Длина текста: {len(result)} символов")
+            print(f"Превью: {result[:200]}...")
         else:
-            print(f"  {key}: {value}")
+            print(f"\n⚠️  AI Overview не найден для запроса '{query}'")
+            print("\nВозможные причины:")
+            print("  • AI Overview недоступен для данного запроса")
+            print("  • Ограничения по региону")
+            print("  • Google изменил структуру страницы")
+            print("  • Нет интернет-соединения")
+
+    except Exception as e:
+        print(f"\n❌ Произошла ошибка: {e}")
+        print("\nПроверьте:")
+        print("  • Интернет-соединение")
+        print("  • Установлены ли все зависимости (playwright install chromium)")
+
+    print("\n")
 
 
 if __name__ == '__main__':
-    # Запускаем все примеры
-    try:
-        example_1_basic()
-        # example_2_multiple_queries()
-        # example_3_custom_settings()
-        # example_4_result_dict()
+    print("\n")
+    print("╔" + "=" * 78 + "╗")
+    print("║" + " " * 20 + "Google AI Overview Parser - Примеры" + " " * 22 + "║")
+    print("╚" + "=" * 78 + "╝")
+    print("\n")
 
-        print("\n\n" + "=" * 80)
-        print("Examples completed!")
-        print("=" * 80)
+    print("Внимание: Для работы парсера требуется интернет-соединение!")
+    print("Если вы видите ошибки сети - это нормально в изолированных окружениях.")
+    print("\n")
 
-    except Exception as e:
-        print(f"\n❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
+    # Запускаем примеры
+    example_1_simple()
+    # example_2_with_options()
+    # example_3_multiple_queries()
+    # example_4_requests_method()
+    # example_5_error_handling()
+
+    print("=" * 80)
+    print("Примеры завершены!")
+    print("=" * 80)
+    print("\nДля использования в реальных условиях:")
+    print("  1. Убедитесь, что есть интернет-соединение")
+    print("  2. Используйте метод 'playwright' для надежности")
+    print("  3. Попробуйте информационные запросы на английском")
+    print("  4. При проблемах используйте save_html=True для отладки")
+    print("\n")
